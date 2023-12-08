@@ -7,9 +7,7 @@ O tratamento e limpeza de dados é uma etapa fundamental do processo de ciência
 Carregando dataset
 
 ```{r}
-dados = read.csv("D:\\Projetos\\Data-science\\data cleaning R\\dados\\Churn.csv", sep = ";", na.strings="", stringsAsFactors=T)
-
-
+dados <- read.csv("D:\\Projetos\\Data-science\\data cleaning R\\dados\\Churn.csv", sep = ";", na.strings="", stringsAsFactors=T)
 ```
 
 Visualizando os dados
@@ -22,25 +20,27 @@ summary(dados)
 Renomeando as colunas
 
 ```{r}
-colnames(dados) = c("Id","Score","Estado","Genero","Idade","Patrimonio","Saldo","Produtos","TemCartCredito","Ativo","Salario","Saiu")
+colnames(dados) <- c("Id","Score","Estado","Genero","Idade","Patrimonio","Saldo","Produtos","TemCartCredito","Ativo","Salario","Saiu")
 
 head(dados)
 ```
 
 ## Explorando os dados
 
-Colunas categóricas
+Exploramos os dados em busca de inconsistências.
+
+-   Colunas categóricas
 
 ```{r}
 #Estados
-counts = table(dados$Estado)
+counts <- table(dados$Estado)
 barplot(counts, main="Estados", xlab="Estados")
 #Gênero
-counts = table(dados$Genero)
+counts <- table(dados$Genero)
 barplot(counts, main="Gêneros", xlab="Gêneros")
 ```
 
-Colunas numéricas
+-   Score
 
 ```{r}
 #Score
@@ -49,7 +49,7 @@ boxplot(dados$Score)
 hist(dados$Score)
 ```
 
-Idade
+-   Idade
 
 ```{r}
 summary(dados$Idade)
@@ -57,7 +57,7 @@ boxplot(dados$Idade)
 hist(dados$Idade)
 ```
 
-Saldo
+-   Saldo
 
 ```{r}
 summary(dados$Saldo)
@@ -65,7 +65,7 @@ boxplot(dados$Saldo)
 hist(dados$Saldo)
 ```
 
-Salário
+-   Salário
 
 ```{r}
 summary(dados$Salario)
@@ -76,24 +76,31 @@ boxplot(dados$Salario,outline = F)
 Valores faltantes - NAs
 
 ```{r}
-#valores faltantes NAs
+# buscando registros (linhas) no dataset que tem valores.NAs
 dados[!complete.cases(dados),]
 ```
 
-Salários
+## Tratando os dados
+
+Após identificar inconsistências, iniciamos o tratamento dos dados.
+
+-   Salários - Substituindo valores faltantes pela mediana
 
 ```{r}
 #tratar salários
 summary(dados$Salario)
-#ver mediana
+
+#mediana
 median(dados$Salario,na.rm = T)
+
 #atribuir mediana a NAs
-dados[is.na(dados$Salario),]$Salario = median(dados$Salario,na.rm = T)
+dados[is.na(dados$Salario),]$Salario <- median(dados$Salario,na.rm = T)
+
 #buscar NAS em salario para checar
 dados[!complete.cases(dados$Salario),]
 ```
 
-Falta de padronização em Gênero
+-   Falta de padronização em Gênero
 
 ```{r}
 #Ver valores
