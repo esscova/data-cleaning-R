@@ -1,0 +1,333 @@
+---
+title: "Limpeza e tratamento de dados"
+author: Wellington Moreira
+email: wsantos08@hotmail.com
+date: "`r Sys.Date()`"
+output: 
+  pdf_document:
+    number_sections: true
+---
+
+![](computer-data.png)
+
+# Conhecendo a base de dados
+
+```{r}
+# Carregando o banco de dados
+dados <- read.csv("../../data-cleaning/dados/Churn.csv", sep=";",stringsAsFactors = T ,na.strings = "")
+
+# visualizando primeiras linhas
+head(dados)
+```
+
+Para um melhor entendimento do dataset, renomeamos as variáveis conforme as regras do negócio.
+
+```{r}
+# trocando nomes
+colnames(dados) <- c(
+  "Id","Score","Estado","Genero","Idade","Patrimonio","Saldo","Produtos","TemCartCredito","Ativo","Salario","Saiu"
+)
+
+# visualizando primeiras linhas
+head(dados)
+```
+
+Agora vamos identificar os tipos de dados que temos neste dataset.
+
+```{r}
+# Sumário Estatístico dos Dados
+summary(dados)
+```
+
+\newpage
+
+# Explorando os dados
+
+## *Estados*
+
+```{r}
+options(width = 300)
+counts <- table(dados$Estado)
+barplot(counts, main="Estados", xlab="Estados", col="lightblue", border = "black")
+```
+
+Podemos ver visualmente que existem dados com valores fora do domínio pré-estabelecido pelas regras de negócio.
+
+Como os dados são para a Região Sul do Brasil, vemos aqui a distribuição destes dados.
+
+```{r}
+summary(dados$Estado)
+```
+
+\newpage
+
+## *Gênero*
+
+```{r}
+counts <- table(dados$Genero)
+barplot(counts, main="Gêneros", xlab="Gêneros", col="lightblue")
+```
+
+Aqui percebemos a falta de padronização dos dados e a existência de valores faltantes.
+
+```{r}
+summary(dados$Genero)
+```
+
+\newpage
+
+## *Score*
+
+```{r}
+par(mfrow = c(1, 2))
+hist(dados$Score, main="Histograma",xlab = "Score", col = "lightblue", border = "black")
+boxplot(dados$Score, main = "Boxplot", ylab = "Score", col = "lightblue", border = "black")
+
+```
+
+Aqui temos dados sem inconsistências conforme as regras de negócio.
+
+```{r}
+summary(dados$Score)
+```
+
+\newpage
+
+## *Idades*
+
+```{r}
+par(mfrow = c(1, 2))
+hist(dados$Idade, main="Histograma", xlab="Idade", col="lightblue", border="black")
+boxplot(dados$Idade, main="Boxplot", ylab="Idade", col="lightblue", border="black")
+```
+
+Aqui percebemos que existem valores de idade fora do domínio estabelecidos pelas regras de negócio, podemos perceber idades negativas e muito acima de 100 anos.
+
+```{r}
+summary(dados$Idade)
+```
+
+\newpage
+
+## *Saldo*
+
+```{r}
+par(mfrow = c(1, 2))
+hist(dados$Saldo, main="Histograma", xlab="Saldo", col="lightblue", border="black")
+boxplot(dados$Saldo, main="Boxplot", ylab="Saldo", col="lightblue", border="black")
+
+```
+
+Aqui temos dados sem inconsistências conforme as regras de negócio.
+
+```{r}
+summary(dados$Saldo)
+```
+
+\newpage
+
+## *Salários*
+
+```{r}
+par(mfrow = c(1, 2))
+boxplot(dados$Salario, main="Boxplot", ylab="Salário", col="lightblue", border="black")
+boxplot(dados$Salario, main="Boxplot - sem outliers", ylab="Salário", col="lightblue", border="black", outline = F)
+```
+
+Podemos perceber inconsistência de dados com valores faltantes e dispersão de dados com outliers conforme métricas estabelecidas pelas regras de negócio
+
+```{r}
+summary(dados$Salario)
+```
+
+\newpage
+
+## *Duplicidade*
+
+```{r}
+x <-  dados[duplicated(dados$Id),]
+x
+```
+
+Podemos pelo identificador perceber que existe um dado duplicado na base de dados.
+
+## *Valores faltantes*
+
+```{r}
+dados[!complete.cases(dados),]
+```
+
+Aqui pegamos todos os registros que contém dados faltantes no dataset.
+
+------------------------------------------------------------------------
+
+# Tratamento de dados
+
+Aqui iniciamos o tratamento com base nas inconsistências encontradas:
+
+1.  **Estados** apresenta dados fora de domínio.
+
+2.  **Gênero** contém dados faltantes e falta de padronização.
+
+3.  **Idades** apresenta valores fora de domínio.
+
+4.  **Salário** contém dados faltantes e outliers.
+
+5.  **Duplicidades** apresenta uma duplicata na base de dados.
+
+6.  **Valores faltantes** a base de dados apresenta registros com valores faltantes.
+
+\newpage
+
+## Estados
+
+```{r}
+summary(dados$Estado)
+```
+
+Sendo um dado categórico, uma estratégia é utilizar a moda (valor que mais se repete) para atribuir ou substituir valores. E assim, vamos pegar todos os valores que não estão no vetor e os substituir pela moda:
+
+```{r}
+dados[!dados$Estado %in% c("RS","SC","PR"),]$Estado <- "RS"
+```
+
+Feito isso, vamos excluir os levels substituidos e confirmar as modificações feitas.
+
+```{r}
+dados$Estado <- factor(dados$Estado)
+summary(dados$Estado)
+```
+
+```{r}
+counts <- table(dados$Estado)
+barplot(counts, main="Estados", xlab="Estados", col="lightgreen", border = "black")
+```
+
+\newpage
+
+## Gênero
+
+Assim como *Idades*, esta variável também é categórica e seu tratamento será o mesmo, onde também utilizaremos da moda como valor para padronização.
+
+```{r}
+summary(dados$Genero)
+```
+
+Podemos perceber que a moda destes dados é *Masculino e assim,* padronizaremos *F* e *Fem* para *Feminino, M* e *NAs* para *Masculino.*
+
+```{r}
+dados[is.na(dados$Genero) | dados$Genero == "M" ,]$Genero <- "Masculino" 
+dados[dados$Genero == "F" | dados$Genero == "Fem", ]$Genero <- "Feminino" 
+
+```
+
+Removemos os levels não mais utilizados e os conferimos novamente.
+
+```{r}
+dados$Genero =   factor(dados$Genero)
+summary(dados$Genero)
+
+```
+
+```{r}
+counts <- table(dados$Genero)
+barplot(counts, main="Gêneros", xlab="Gêneros", col="lightgreen")
+```
+
+\newpage
+
+## Idades
+
+Aqui iniciamos o tratamento de variáveis numéricas, sendo uma estratégia a utilização da mediana.
+
+```{r}
+summary(dados$Idade)
+```
+
+Conforme as regras de negócio buscamos os valores fora do domíno.
+
+```{r}
+dados[dados$Idade<0 | dados$Idade>110 ,]$Idade
+```
+
+Após regra estabelecida, iniciamos a substituição e faremos novamente uma verificação.
+
+```{r}
+dados[dados$Idade<0 | dados$Idade>110 ,]$Idade <- median(dados$Idade)
+summary(dados$Idade)
+```
+
+```{r}
+par(mfrow = c(1, 2))
+hist(dados$Idade, main="Histograma", xlab="Idade", col="lightgreen", border="black")
+boxplot(dados$Idade, main="Boxplot", ylab="Idade", col="lightgreen", border="black", outline=F)
+```
+
+\newpage
+
+## Salários
+
+Conforme relatado, trataremos aqui dados faltantes, e também utilizaremos a mediana para esta variável numérica.
+
+```{r}
+summary(dados$Salario)
+```
+
+Substituindo NAs pela mediana e após verficando novamente os dados.
+
+```{r}
+dados[is.na(dados$Salario),]$Salario <- median(dados$Salario,na.rm = T)
+dados[!complete.cases(dados$Salario),]
+```
+
+Iniciamos agora o tratamento de outliers, uma estratégia é utilizar o desvio padrão como métrica de comparação. Aqui vemos valores que passam em duas vezes o valor do desvio.
+
+```{r}
+desv <- sd(dados$Salario, na.rm = T)
+desv
+dados[dados$Salario >= 2 *desv  , ]$Salario
+```
+
+Para estes, utilizamos a mediana para reatribuição e ao final conferimos novamente a base de dados.
+
+```{r}
+dados[dados$Salario >= 2 *desv  , ]$Salario <- median(dados$Salario)
+dados[dados$Salario >= 2 *desv  , ]$Salario
+```
+
+```{r}
+par(mfrow = c(1, 2))
+boxplot(dados$Salario, main="Boxplot", ylab="Salário", col="lightgreen", border="black")
+hist(dados$Salario, main="Histograma", xlab="Salário", col="lightgreen", border="black")
+```
+
+\newpage
+
+## Duplicidade
+
+Como relatado a base apresenta uma duplicidade a qual podemos identificar pelo *ID*
+
+```{r}
+x <-  dados[duplicated(dados$Id),]
+x
+```
+
+Faremos sua exclusão pelo indice 82 e verificamos novamente.
+
+```{r}
+dados <- dados[-c(82),]
+dados[dados$Id == x$Id ,]
+```
+
+```{r}
+x <-  dados[duplicated(dados$Id),]
+x
+```
+
+## Valores faltantes
+
+Por fim confirmamos o tratamento de valores faltantes.
+
+```{r}
+dados[!complete.cases(dados),]
+```
